@@ -8,6 +8,10 @@ import android.view.View;
 import android.widget.Button;
 import android.widget.SeekBar;
 import android.media.MediaPlayer;
+import android.widget.TextView;
+
+import java.lang.reflect.Field;
+import java.util.concurrent.TimeUnit;
 
 public class MainActivity extends AppCompatActivity implements View.OnClickListener {
 
@@ -17,6 +21,10 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     MediaPlayer mediaPlayer;
     Runnable runnable;
     Handler handler;
+
+    TextView name, duration;
+
+    int currentPosition, totalDuration;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -33,6 +41,8 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             @Override
             public void onPrepared(MediaPlayer mp) {
                 seekBar.setMax(mediaPlayer.getDuration());
+                totalDuration = mediaPlayer.getDuration();
+                changeSeekBar();
             }
         });
 
@@ -61,6 +71,11 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
         mediaPlayer = MediaPlayer.create(this, R.raw.alpo_chhoate);
         handler = new Handler();
+
+        name = findViewById(R.id.name);
+        Field[] fields = R.raw.class.getFields();
+        name.setText(fields[0].getName());
+        duration = findViewById(R.id.duration);
     }
 
     @Override
@@ -73,22 +88,20 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 } else {
                     mediaPlayer.start();
                     play_pause.setText("PAUSE");
-                    changeSeekBar();
                 }
                 break;
             case R.id.forward:
                 mediaPlayer.seekTo(mediaPlayer.getCurrentPosition() + 5000);
-                changeSeekBar();
                 break;
             case R.id.backward:
                 mediaPlayer.seekTo(mediaPlayer.getCurrentPosition() - 5000);
-                changeSeekBar();
                 break;
         }
     }
 
     private void changeSeekBar() {
         seekBar.setProgress(mediaPlayer.getCurrentPosition());
+        updatePosition();
 
         runnable = new Runnable() {
             @Override
@@ -98,5 +111,20 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         };
 
         handler.postDelayed(runnable, 100);
+    }
+
+    private void updatePosition() {
+        currentPosition = mediaPlayer.getCurrentPosition();
+
+        String strCurrentPos = String.format("%02d:%02d",
+                TimeUnit.MILLISECONDS.toMinutes(currentPosition),
+                TimeUnit.MILLISECONDS.toSeconds(currentPosition) -
+                        TimeUnit.MINUTES.toSeconds(TimeUnit.MILLISECONDS.toMinutes(currentPosition)));
+        String strTotalPos = String.format("%02d:%02d",
+                TimeUnit.MILLISECONDS.toMinutes(totalDuration),
+                TimeUnit.MILLISECONDS.toSeconds(totalDuration) -
+                        TimeUnit.MINUTES.toSeconds(TimeUnit.MILLISECONDS.toMinutes(totalDuration)));
+
+        duration.setText(strCurrentPos + " / " + strTotalPos);
     }
 }
